@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'pre_character_selection_screen.dart';
+import 'character_selection_screen.dart';
 
-class IntroStoryScreen extends StatefulWidget {
-  const IntroStoryScreen({super.key});
+class PreCharacterSelectionScreen extends StatefulWidget {
+  const PreCharacterSelectionScreen({super.key});
 
   @override
-  State<IntroStoryScreen> createState() => _IntroStoryScreenState();
+  State<PreCharacterSelectionScreen> createState() => _PreCharacterSelectionScreenState();
 }
 
-class _IntroStoryScreenState extends State<IntroStoryScreen> with TickerProviderStateMixin {
+class _PreCharacterSelectionScreenState extends State<PreCharacterSelectionScreen> with TickerProviderStateMixin {
   final List<String> _lines = [
-    'Cuando el reino se ve amenazado por la ignorancia y el caos...',
-    'Una figura emerge desde las sombras.',
-    'Un héroe destinado a restaurar el conocimiento...',
-    'Y proteger los secretos más valiosos.',
+    'Bienvenido, aventurero.',
+    'El destino te ha traído a este lugar...',
+    'Ahora debes elegir tu camino.',
+    'Selecciona el personaje que representa tu esencia.',
   ];
 
   int _currentLine = 0;
@@ -32,7 +32,7 @@ class _IntroStoryScreenState extends State<IntroStoryScreen> with TickerProvider
     _startTyping();
 
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
 
@@ -41,7 +41,7 @@ class _IntroStoryScreenState extends State<IntroStoryScreen> with TickerProvider
         if (status == AnimationStatus.completed) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const PreCharacterSelectionScreen()),
+            MaterialPageRoute(builder: (_) => const CharacterSelectionScreen()),
           );
         }
       });
@@ -93,8 +93,7 @@ class _IntroStoryScreenState extends State<IntroStoryScreen> with TickerProvider
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset('assets/backgrounds/story_bg.png', fit: BoxFit.cover),
-          Container(color: Colors.black.withOpacity(0.6)),
+          Container(color: Colors.black),
           Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
@@ -115,10 +114,10 @@ class _IntroStoryScreenState extends State<IntroStoryScreen> with TickerProvider
                   ElevatedButton(
                     onPressed: _goToCharacterSelection,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black87,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black87,
                       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                      shape: const RoundedRectangleBorder(), // No border radius
+                      shape: const RoundedRectangleBorder(),
                       textStyle: const TextStyle(
                         fontSize: 16,
                         fontFamily: 'MedievalSharp',

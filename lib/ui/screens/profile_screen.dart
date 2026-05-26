@@ -81,7 +81,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
   }
 
   void _showAddCoinsDialog() {
-    final TextEditingController _controller = TextEditingController();
+    final TextEditingController controller = TextEditingController();
 
     showDialog(
       context: context,
@@ -92,7 +92,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
           style: TextStyle(color: Colors.amberAccent, fontFamily: 'MedievalSharp'),
         ),
         content: TextField(
-          controller: _controller,
+          controller: controller,
           keyboardType: TextInputType.number,
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
@@ -110,7 +110,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
           TextButton(
             child: const Text('Agregar', style: TextStyle(color: Colors.amberAccent)),
             onPressed: () {
-              final int? amount = int.tryParse(_controller.text);
+              final int? amount = int.tryParse(controller.text);
               if (amount != null && amount > 0) {
                 setState(() => _player!.coins += amount);
                 LocalStorageService().saveCharacter(_player!.toCharacter());

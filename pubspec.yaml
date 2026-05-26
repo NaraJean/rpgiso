@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.17.0 <3.0.0"
+  sdk: ">=3.0.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -31,13 +31,11 @@ dependencies:
   flutter:
     sdk: flutter
   shared_preferences: ^2.2.3
-  flutter_secure_storage: 9.0.0
-  cryptography: ^2.7.0
   animated_text_kit: ^4.2.2
   animate_do: ^3.0.0
   particles_flutter: ^0.1.1
   shimmer: ^2.0.0
-
+  google_sign_in: 6.1.6
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -50,7 +48,7 @@ dev_dependencies:
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
+  # rules and activating additional oznes.
   flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the

@@ -50,8 +50,8 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
       body: PageView(
         controller: _pageController,
         onPageChanged: _onPageChanged,
-        children: _screens,
         physics: const BouncingScrollPhysics(),
+        children: _screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: const Color.fromARGB(255, 5, 5, 17),

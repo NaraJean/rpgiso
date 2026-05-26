@@ -2,5 +2,14 @@ enum MinigameType {
   trivia,
   hangman,
   memory,
-  // Puedes agregar más tipos en el futuro
+  runeForge,
+  phishingClues,
+  routeDecision,
+  accessPuzzle,
+  backupTimeline,
+  narrativeChoice,
+  orderSteps,
+  alertClassification,
+  shieldBoss,
+  none,
 }
