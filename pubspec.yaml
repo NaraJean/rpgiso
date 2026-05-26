@@ -87,6 +87,10 @@ flutter:
     - assets/enemies/orc.png
     - assets/enemies/mage.png
     - assets/enemies/defender.png
+    - assets/enemies/devorador_memorias.png
+    - assets/enemies/golem_cerradura.png
+    - assets/enemies/heraldo_impostor.png
+    - assets/enemies/sombra_intrusa.png
     - assets/textures/stone_texture.png
     - assets/items/fire_sword.png
     - assets/items/shield.png
@@ -95,6 +99,8 @@ flutter:
     - assets/items/water_scepter.png
     - assets/icons/coin_icon.png
     - assets/icons/speech_bubble.png
+
+    - assets/npcs/
 
 
 

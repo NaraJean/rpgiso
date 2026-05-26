@@ -11,6 +11,7 @@ import '../../models/narrative_mission.dart';
 
 import 'mission_intro_screen.dart';
 import 'narrative_mission_screen.dart';
+import 'dungeon_knowledge_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -93,6 +94,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       _buildPlayerHeader(),
                       const SizedBox(height: 18),
                       _buildCampaignBanner(),
+                      const SizedBox(height: 18),
+                      _buildDungeonCard(),
                       const SizedBox(height: 18),
                       _buildSectionHeader(
                         title: 'Campaña Principal',
@@ -397,6 +400,176 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ],
       ),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // MAZMORRA DEL CONOCIMIENTO
+  // ---------------------------------------------------------------------------
+
+  Widget _buildDungeonCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(220, 22, 12, 45),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFCB9AFF).withOpacity(0.75),
+          width: 1.4,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFCB9AFF).withOpacity(0.18),
+            blurRadius: 18,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: _openDungeon,
+        child: Padding(
+          padding: const EdgeInsets.all(17),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCB9AFF).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: const Color(0xFFCB9AFF).withOpacity(0.65),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: Colors.amberAccent,
+                      size: 29,
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Mazmorra del Conocimiento',
+                          style: medievalStyle.copyWith(
+                            color: Colors.amberAccent,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Modo extra de supervivencia',
+                          style: medievalStyle.copyWith(
+                            color: const Color(0xFFCB9AFF),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: Colors.white54,
+                    size: 18,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 13),
+              Text(
+                'Responde 30 preguntas seguidas, derrota enemigos y sobrevive hasta el final. '
+                'Cada acierto permite atacar; cada fallo permite que el enemigo contraataque.',
+                style: medievalStyle.copyWith(
+                  color: Colors.white70,
+                  fontSize: 12.5,
+                  height: 1.25,
+                ),
+              ),
+              const SizedBox(height: 13),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildDungeonTag(
+                    icon: Icons.quiz_rounded,
+                    label: '30 preguntas',
+                    color: Colors.amberAccent,
+                  ),
+                  _buildDungeonTag(
+                    icon: Icons.favorite_rounded,
+                    label: 'Supervivencia',
+                    color: Colors.redAccent,
+                  ),
+                  _buildDungeonTag(
+                    icon: Icons.shield_rounded,
+                    label: 'Enemigos rotativos',
+                    color: const Color(0xFFCB9AFF),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Align(
+                alignment: Alignment.centerRight,
+                child: _buildStartButton(
+                  label: 'Entrar',
+                  accentColor: const Color(0xFFCB9AFF),
+                  onPressed: _openDungeon,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDungeonTag({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: color.withOpacity(0.38),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 13),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: medievalStyle.copyWith(
+              color: color,
+              fontSize: 10.5,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openDungeon() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DungeonKnowledgeScreen(
+          playerStatus: _player!,
+        ),
+      ),
+    ).then((_) => setState(() {}));
   }
 
   // ---------------------------------------------------------------------------

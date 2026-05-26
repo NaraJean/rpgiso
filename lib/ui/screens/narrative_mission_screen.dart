@@ -139,6 +139,7 @@ class _NarrativeMissionScreenState extends State<NarrativeMissionScreen>
 
     animation.addListener(() {
       if (!mounted) return;
+
       setState(() {
         _visibleText = _fullText.substring(0, animation.value);
       });
@@ -160,6 +161,7 @@ class _NarrativeMissionScreenState extends State<NarrativeMissionScreen>
     if (!_isTyping) return;
 
     _typingController?.stop();
+
     setState(() {
       _visibleText = _fullText;
     });
@@ -334,9 +336,7 @@ class _NarrativeMissionScreenState extends State<NarrativeMissionScreen>
 
       case MinigameType.trivia:
         if (step.enemy == null) {
-          _showSimpleError(
-            'Este paso de combate no tiene enemigo asignado.',
-          );
+          _showSimpleError('Este paso de combate no tiene enemigo asignado.');
           return;
         }
 
@@ -353,9 +353,7 @@ class _NarrativeMissionScreenState extends State<NarrativeMissionScreen>
       case MinigameType.orderSteps:
       case MinigameType.alertClassification:
       case MinigameType.shieldBoss:
-        _showSimpleError(
-          'Este minijuego aún no está implementado.',
-        );
+        _showSimpleError('Este minijuego aún no está implementado.');
         return;
 
       case MinigameType.none:
@@ -530,7 +528,19 @@ class _NarrativeMissionScreenState extends State<NarrativeMissionScreen>
             );
           },
         ),
-        Container(color: Colors.black.withOpacity(0.6)),
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withOpacity(0.45),
+                Colors.black.withOpacity(0.65),
+                Colors.black.withOpacity(0.82),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -538,7 +548,7 @@ class _NarrativeMissionScreenState extends State<NarrativeMissionScreen>
   Widget _buildCurrentPhase() {
     switch (_phase) {
       case _Phase.prologue:
-        return _buildDialogueView(
+        return _buildDialogueScene(
           key: const ValueKey('prologue'),
           headerLabel: widget.mission.title,
           npcName: widget.mission.prologue.npcName,
@@ -549,7 +559,7 @@ class _NarrativeMissionScreenState extends State<NarrativeMissionScreen>
 
       case _Phase.stepContent:
         if (_showingStepDialogue) {
-          return _buildStepNpcDialogueView(
+          return _buildStepNpcDialogueScene(
             key: ValueKey(
               'dialogue_${_currentStep.id}_$_currentDialogueIndex',
             ),
@@ -561,7 +571,7 @@ class _NarrativeMissionScreenState extends State<NarrativeMissionScreen>
         );
 
       case _Phase.stepWin:
-        return _buildDialogueView(
+        return _buildDialogueScene(
           key: ValueKey('step_win_${_currentStep.id}'),
           headerLabel: '✓ ${_currentStep.title}',
           headerColor: const Color(0xFF4CAF50),
@@ -585,7 +595,7 @@ class _NarrativeMissionScreenState extends State<NarrativeMissionScreen>
     }
   }
 
-  Widget _buildDialogueView({
+  Widget _buildDialogueScene({
     required Key key,
     required String headerLabel,
     required String npcName,
@@ -597,90 +607,313 @@ class _NarrativeMissionScreenState extends State<NarrativeMissionScreen>
     return GestureDetector(
       key: key,
       onTap: _isTyping ? _skipTyping : null,
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxHeight < 720;
+
+          return Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 16 : 22,
+              vertical: compact ? 12 : 18,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildSectionLabel(
                   headerLabel,
-                  color: headerColor ?? Colors.amberAccent,
+                  color: headerColor ?? _accentForCharacter(npcName),
                 ),
-                const SizedBox(height: 18),
-                _buildNpcPortrait(npcName),
-                const SizedBox(height: 12),
-                _buildNpcNameBox(npcName),
-                const SizedBox(height: 10),
-                _buildTextBox(visibleText),
-                const SizedBox(height: 20),
-                AnimatedOpacity(
-                  opacity: _isTyping ? 0.0 : 1.0,
-                  duration: const Duration(milliseconds: 250),
-                  child: _buildPrimaryButton(
-                    label: continueLabel,
-                    onPressed: _isTyping ? null : onContinue,
-                    icon: Icons.arrow_forward_rounded,
+                SizedBox(height: compact ? 10 : 14),
+                Expanded(
+                  child: _buildCharacterStage(
+                    npcName,
+                    compact: compact,
                   ),
+                ),
+                SizedBox(height: compact ? 10 : 14),
+                _buildRpgDialogueBox(
+                  characterName: npcName,
+                  text: visibleText,
+                  continueLabel: continueLabel,
+                  onContinue: _isTyping ? null : onContinue,
+                  compact: compact,
                 ),
               ],
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildStepNpcDialogueView({required Key key}) {
+  Widget _buildStepNpcDialogueScene({required Key key}) {
     final dialogues = _currentStepDialogues;
     final dialogue = dialogues[_currentDialogueIndex];
-
     final isLastDialogue = _currentDialogueIndex == dialogues.length - 1;
 
     return GestureDetector(
       key: key,
       onTap: _isTyping ? _skipTyping : null,
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxHeight < 720;
+
+          return Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 16 : 22,
+              vertical: compact ? 12 : 18,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildSectionLabel(
                   _currentStep.title,
-                  color: Colors.amberAccent,
+                  color: _accentForCharacter(dialogue.npcName),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: compact ? 6 : 8),
                 _buildDialogueCounter(
                   current: _currentDialogueIndex + 1,
                   total: dialogues.length,
                 ),
-                const SizedBox(height: 16),
-                _buildNpcPortrait(dialogue.npcName),
-                const SizedBox(height: 12),
-                _buildNpcNameBox(dialogue.npcName),
-                const SizedBox(height: 10),
-                _buildTextBox(_visibleText),
-                const SizedBox(height: 20),
-                AnimatedOpacity(
-                  opacity: _isTyping ? 0.0 : 1.0,
-                  duration: const Duration(milliseconds: 250),
-                  child: _buildPrimaryButton(
-                    label: isLastDialogue
-                        ? 'Continuar escena'
-                        : 'Siguiente diálogo',
-                    onPressed: _isTyping ? null : _goNextStepDialogue,
-                    icon: Icons.arrow_forward_rounded,
+                SizedBox(height: compact ? 8 : 12),
+                Expanded(
+                  child: _buildCharacterStage(
+                    dialogue.npcName,
+                    compact: compact,
                   ),
+                ),
+                SizedBox(height: compact ? 10 : 14),
+                _buildRpgDialogueBox(
+                  characterName: dialogue.npcName,
+                  text: _visibleText,
+                  continueLabel:
+                      isLastDialogue ? 'Continuar escena' : 'Siguiente diálogo',
+                  onContinue: _isTyping ? null : _goNextStepDialogue,
+                  compact: compact,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCharacterStage(
+    String characterName, {
+    required bool compact,
+  }) {
+    final assetPath = _characterAssetForName(characterName);
+    final accent = _accentForCharacter(characterName);
+
+    return Center(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: compact ? 260 : 330,
+            height: compact ? 260 : 330,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: accent.withOpacity(0.08),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withOpacity(0.25),
+                  blurRadius: 46,
+                  spreadRadius: 10,
                 ),
               ],
             ),
           ),
+          Container(
+            width: compact ? 225 : 290,
+            height: compact ? 225 : 290,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: accent.withOpacity(0.55),
+                width: 2.4,
+              ),
+            ),
+          ),
+          Container(
+            width: compact ? 205 : 265,
+            height: compact ? 205 : 265,
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black.withOpacity(0.45),
+              border: Border.all(
+                color: accent.withOpacity(0.88),
+                width: 2.8,
+              ),
+            ),
+            child: ClipOval(
+              child: assetPath == null
+                  ? _buildCharacterFallbackIcon(accent)
+                  : Image.asset(
+                      assetPath,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
+                      errorBuilder: (_, __, ___) =>
+                          _buildCharacterFallbackIcon(accent),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRpgDialogueBox({
+    required String characterName,
+    required String text,
+    required String continueLabel,
+    required VoidCallback? onContinue,
+    required bool compact,
+  }) {
+    final accent = _accentForCharacter(characterName);
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        16,
+        compact ? 18 : 20,
+        16,
+        14,
+      ),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(240, 12, 14, 30),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: accent.withOpacity(0.72),
+          width: 1.6,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.45),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: accent.withOpacity(0.10),
+            blurRadius: 22,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _buildCharacterNamePlate(characterName, accent),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            text,
+            style: _medievalStyle.copyWith(
+              fontSize: compact ? 13.5 : 15,
+              color: const Color(0xFFCBD8F0),
+              height: 1.28,
+            ),
+            maxLines: compact ? 4 : 5,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              if (_isTyping)
+                Expanded(
+                  child: Text(
+                    'Toca para mostrar todo',
+                    style: _medievalStyle.copyWith(
+                      color: Colors.white38,
+                      fontSize: 10.5,
+                    ),
+                  ),
+                )
+              else
+                const Spacer(),
+              AnimatedOpacity(
+                opacity: _isTyping ? 0.0 : 1.0,
+                duration: const Duration(milliseconds: 250),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 19, 34, 54),
+                    disabledBackgroundColor: Colors.grey.shade800,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 14,
+                    ),
+                    side: BorderSide(
+                      color: accent.withOpacity(0.85),
+                      width: 1,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onPressed: onContinue,
+                  icon: const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white70,
+                    size: 17,
+                  ),
+                  label: Text(
+                    continueLabel,
+                    style: _medievalStyle.copyWith(
+                      fontSize: compact ? 12.5 : 13.5,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCharacterNamePlate(String characterName, Color accent) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(245, 20, 20, 48),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: accent.withOpacity(0.85),
+          width: 1.3,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withOpacity(0.16),
+            blurRadius: 12,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _iconForCharacter(characterName),
+            color: accent,
+            size: 16,
+          ),
+          const SizedBox(width: 7),
+          Text(
+            characterName,
+            style: _medievalStyle.copyWith(
+              fontSize: 14,
+              color: accent,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -993,7 +1226,7 @@ class _NarrativeMissionScreenState extends State<NarrativeMissionScreen>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.42),
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
         border: Border(
           bottom: BorderSide(
             color: color.withOpacity(0.65),
@@ -1010,6 +1243,8 @@ class _NarrativeMissionScreenState extends State<NarrativeMissionScreen>
           fontWeight: FontWeight.bold,
         ),
         textAlign: TextAlign.center,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -1036,138 +1271,6 @@ class _NarrativeMissionScreenState extends State<NarrativeMissionScreen>
             color: Colors.white60,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildNpcPortrait(String npcName) {
-    final assetPath = _npcAssetForName(npcName);
-
-    return Center(
-      child: Container(
-        width: 118,
-        height: 118,
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.black.withOpacity(0.45),
-          border: Border.all(
-            color: Colors.amberAccent.withOpacity(0.65),
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.amberAccent.withOpacity(0.12),
-              blurRadius: 14,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: ClipOval(
-          child: assetPath == null
-              ? _buildNpcFallbackIcon()
-              : Image.asset(
-                  assetPath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _buildNpcFallbackIcon(),
-                ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNpcFallbackIcon() {
-    return Container(
-      color: const Color.fromARGB(255, 24, 24, 52),
-      child: const Icon(
-        Icons.person_outline_rounded,
-        color: Colors.amberAccent,
-        size: 54,
-      ),
-    );
-  }
-
-  String? _npcAssetForName(String npcName) {
-    final normalized = npcName.toLowerCase();
-
-    if (normalized.contains('elyra')) {
-      return 'assets/npcs/elyra.png';
-    }
-
-    if (normalized.contains('brann') || normalized.contains('forjador')) {
-      return 'assets/npcs/brann.png';
-    }
-
-    if (normalized.contains('lira') || normalized.contains('mensajera')) {
-      return 'assets/npcs/lira.png';
-    }
-
-    if (normalized.contains('rowan') || normalized.contains('capitán')) {
-      return 'assets/npcs/rowan.png';
-    }
-
-    if (normalized.contains('toren') || normalized.contains('guardia')) {
-      return 'assets/npcs/toren.png';
-    }
-
-    if (normalized.contains('thalen') || normalized.contains('archivista')) {
-      return 'assets/npcs/thalen.png';
-    }
-
-    if (normalized.contains('heraldo')) {
-      return 'assets/npcs/heraldo_impostor.png';
-    }
-
-    if (normalized.contains('gólem') || normalized.contains('golem')) {
-      return 'assets/npcs/golem_cerradura.png';
-    }
-
-    if (normalized.contains('sombra')) {
-      return 'assets/npcs/sombra_intrusa.png';
-    }
-
-    if (normalized.contains('devorador')) {
-      return 'assets/npcs/devorador_memorias.png';
-    }
-
-    if (normalized.contains('ciudadano')) {
-      return 'assets/npcs/ciudadano.png';
-    }
-
-    return null;
-  }
-
-  Widget _buildNpcNameBox(String npcName) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(180, 20, 20, 50),
-        borderRadius: BorderRadius.circular(7),
-        border: Border.all(
-          color: Colors.amberAccent.withOpacity(0.6),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.person_outline,
-            color: Colors.amberAccent,
-            size: 16,
-          ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              npcName,
-              style: _medievalStyle.copyWith(
-                fontSize: 15,
-                color: Colors.amberAccent,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1349,6 +1452,167 @@ class _NarrativeMissionScreenState extends State<NarrativeMissionScreen>
         ],
       ),
     );
+  }
+
+  Widget _buildCharacterFallbackIcon(Color accent) {
+    return Container(
+      color: const Color.fromARGB(255, 24, 24, 52),
+      child: Icon(
+        Icons.person_outline_rounded,
+        color: accent,
+        size: 72,
+      ),
+    );
+  }
+
+  String? _characterAssetForName(String characterName) {
+    final normalized = characterName.toLowerCase();
+
+    // NPC aliados
+    if (normalized.contains('elyra')) {
+      return 'assets/npcs/elyra.png';
+    }
+
+    if (normalized.contains('brann') || normalized.contains('forjador')) {
+      return 'assets/npcs/brann.png';
+    }
+
+    if (normalized.contains('lira') || normalized.contains('mensajera')) {
+      return 'assets/npcs/lira.png';
+    }
+
+    if (normalized.contains('rowan') || normalized.contains('capitán')) {
+      return 'assets/npcs/rowan.png';
+    }
+
+    if (normalized.contains('thalen') || normalized.contains('archivista')) {
+      return 'assets/npcs/thalen.png';
+    }
+
+    // Enemigos narrativos que pueden hablar en escenas
+    if (normalized.contains('gólem') ||
+        normalized.contains('golem') ||
+        normalized.contains('cerradura')) {
+      return 'assets/enemies/golem_cerradura.png';
+    }
+
+    if (normalized.contains('heraldo') || normalized.contains('impostor')) {
+      return 'assets/enemies/heraldo_impostor.png';
+    }
+
+    if (normalized.contains('sombra') || normalized.contains('intrusa')) {
+      return 'assets/enemies/sombra_intrusa.png';
+    }
+
+    if (normalized.contains('devorador') || normalized.contains('memorias')) {
+      return 'assets/enemies/devorador_memorias.png';
+    }
+
+    // Enemigos viejos o respaldo
+    if (normalized.contains('orco') || normalized.contains('orc')) {
+      return 'assets/enemies/orc.png';
+    }
+
+    if (normalized.contains('hechicero') ||
+        normalized.contains('mage') ||
+        normalized.contains('mago') ||
+        normalized.contains('caos')) {
+      return 'assets/enemies/mage.png';
+    }
+
+    if (normalized.contains('defensor') || normalized.contains('defender')) {
+      return 'assets/enemies/defender.png';
+    }
+
+    return null;
+  }
+
+  Color _accentForCharacter(String characterName) {
+    final normalized = characterName.toLowerCase();
+
+    if (normalized.contains('elyra')) {
+      return const Color(0xFFB8A040);
+    }
+
+    if (normalized.contains('brann') || normalized.contains('forjador')) {
+      return Colors.amberAccent;
+    }
+
+    if (normalized.contains('lira') || normalized.contains('mensajera')) {
+      return const Color(0xFFD19A3A);
+    }
+
+    if (normalized.contains('rowan') || normalized.contains('capitán')) {
+      return const Color(0xFF4CAF90);
+    }
+
+    if (normalized.contains('thalen') || normalized.contains('archivista')) {
+      return const Color(0xFF7DD3FC);
+    }
+
+    if (normalized.contains('gólem') ||
+        normalized.contains('golem') ||
+        normalized.contains('cerradura')) {
+      return const Color(0xFF94A3B8);
+    }
+
+    if (normalized.contains('heraldo') || normalized.contains('impostor')) {
+      return const Color(0xFFF97316);
+    }
+
+    if (normalized.contains('sombra') || normalized.contains('intrusa')) {
+      return const Color(0xFFA78BFA);
+    }
+
+    if (normalized.contains('devorador') || normalized.contains('memorias')) {
+      return const Color(0xFFFB7185);
+    }
+
+    return Colors.amberAccent;
+  }
+
+  IconData _iconForCharacter(String characterName) {
+    final normalized = characterName.toLowerCase();
+
+    if (normalized.contains('elyra')) {
+      return Icons.auto_awesome_rounded;
+    }
+
+    if (normalized.contains('brann') || normalized.contains('forjador')) {
+      return Icons.handyman_rounded;
+    }
+
+    if (normalized.contains('lira') || normalized.contains('mensajera')) {
+      return Icons.mark_email_unread_rounded;
+    }
+
+    if (normalized.contains('rowan') || normalized.contains('capitán')) {
+      return Icons.shield_rounded;
+    }
+
+    if (normalized.contains('thalen') || normalized.contains('archivista')) {
+      return Icons.menu_book_rounded;
+    }
+
+    if (normalized.contains('gólem') ||
+        normalized.contains('golem') ||
+        normalized.contains('cerradura')) {
+      return Icons.account_tree_rounded;
+    }
+
+    if (normalized.contains('heraldo') || normalized.contains('impostor')) {
+      return Icons.warning_amber_rounded;
+    }
+
+    if (normalized.contains('sombra') || normalized.contains('intrusa')) {
+      return Icons.visibility_off_rounded;
+    }
+
+    if (normalized.contains('devorador') || normalized.contains('memorias')) {
+      return Icons.psychology_alt_rounded;
+    }
+
+    return Icons.person_outline_rounded;
   }
 
   IconData _iconForStepType(StepType type) {

@@ -1,13 +1,9 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 
 import '../../models/enemy.dart';
 import '../../models/player_status.dart';
 import '../../models/question.dart';
 import '../../models/game_mission.dart';
-import '../../models/minigame_type.dart';
-
 import '../../services/local_storage_service.dart';
 import '../widgets/combat_engine.dart';
 
@@ -17,8 +13,7 @@ class TriviaCombatScreen extends StatefulWidget {
   final Enemy enemy;
   final GameMission mission;
 
-  /// Callback al terminar el combate.
-  /// Recibe true si ganó, false si perdió.
+  /// Callback al terminar el combate. Recibe `true` si ganó, `false` si perdió.
   final Function(bool won)? onComplete;
 
   const TriviaCombatScreen({
@@ -39,15 +34,11 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
   late List<Question> _questions;
 
   int _currentQuestionIndex = 0;
-  int _correctAnswers = 0;
-  int _wrongAnswers = 0;
-  late int _damagePerCorrectAnswer;
 
   bool _showingFeedback = false;
   bool _showFinalPopup = false;
   bool _victory = false;
   bool _showIntro = true;
-  bool _combatFinished = false;
 
   String _feedbackMessage = '';
 
@@ -62,28 +53,11 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
   late AnimationController _enemyZoomController;
   late Animation<double> _enemyZoom;
 
-  static const TextStyle _medievalStyle = TextStyle(
-    fontFamily: 'MedievalSharp',
-  );
-
   @override
   void initState() {
     super.initState();
 
     _questions = widget.questions;
-
-    final questionCount = _questions.isEmpty ? 1 : _questions.length;
-    final baseDynamicDamage = (widget.enemy.maxHealth / questionCount).ceil();
-
-    /// Regla de balance:
-    /// El daño por acierto debe ser suficiente para que, si responde todo bien,
-    /// el jugador pueda derrotar al enemigo.
-    ///
-    /// También respetamos el daño del jugador si es mayor.
-    _damagePerCorrectAnswer = max(
-      widget.playerStatus.playerDamage,
-      baseDynamicDamage,
-    );
 
     _feedbackController = AnimationController(
       vsync: this,
@@ -152,7 +126,7 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
 
     _introController.forward();
 
-    Future.delayed(const Duration(milliseconds: 1400), () {
+    Future.delayed(const Duration(milliseconds: 1600), () {
       if (!mounted) return;
 
       setState(() {
@@ -172,8 +146,6 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
   }
 
   Future<bool> _confirmExit() async {
-    if (_combatFinished) return true;
-
     final shouldExit = await showDialog<bool>(
       context: context,
       builder: (ctx) => Dialog(
@@ -190,53 +162,52 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '¿Abandonar el combate?',
-                style: _medievalStyle.copyWith(
+              const Text(
+                '¿Estás seguro de abandonar el combate?',
+                style: TextStyle(
                   fontSize: 18,
+                  fontFamily: 'MedievalSharp',
                   color: Colors.white,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              Text(
+              const Text(
                 'Perderás tu progreso en esta batalla.',
-                style: _medievalStyle.copyWith(
+                style: TextStyle(
                   fontSize: 14,
+                  fontFamily: 'MedievalSharp',
                   color: Colors.white70,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.white),
-                      ),
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: Text(
-                        'Cancelar',
-                        style: _medievalStyle.copyWith(
-                          color: Colors.white,
-                        ),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.white),
+                    ),
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text(
+                      'Cancelar',
+                      style: TextStyle(
+                        fontFamily: 'MedievalSharp',
+                        color: Colors.white,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            const Color.fromARGB(255, 90, 20, 20),
-                      ),
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: Text(
-                        'Salir',
-                        style: _medievalStyle.copyWith(
-                          color: Colors.white,
-                        ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 90, 20, 20),
+                    ),
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text(
+                      'Sí, abandonar',
+                      style: TextStyle(
+                        fontFamily: 'MedievalSharp',
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -251,27 +222,19 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
     return shouldExit ?? false;
   }
 
-  Future<void> _finishCombat(bool didWin) async {
-    if (_combatFinished) return;
+  Future<void> _showFinalPopupAndExit(bool didWin) async {
+    if (widget.mission.xpReward > 0) {
+      widget.playerStatus.gainXp(widget.mission.xpReward);
+    }
 
-    _combatFinished = true;
-
-    if (didWin) {
-      if (widget.mission.xpReward > 0) {
-        widget.playerStatus.gainXp(widget.mission.xpReward);
-      }
-
-      if (widget.mission.coinReward > 0) {
-        widget.playerStatus.coins += widget.mission.coinReward;
-      }
+    if (widget.mission.coinReward > 0) {
+      widget.playerStatus.coins += widget.mission.coinReward;
     }
 
     await LocalStorageService().saveCharacter(
       widget.playerStatus.toCharacter(),
     );
 
-    /// Si viene desde una misión narrativa, regresamos inmediatamente
-    /// para que NarrativeMissionScreen continúe el flujo.
     if (widget.onComplete != null) {
       widget.onComplete!(didWin);
 
@@ -281,9 +244,6 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
 
       return;
     }
-
-    /// Flujo independiente para misiones antiguas.
-    if (!mounted) return;
 
     setState(() {
       _victory = didWin;
@@ -300,58 +260,75 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
   void _handleAnswer(
     bool isCorrect,
     String explanation,
-    void Function(int damage) dealDamage,
-    void Function(int damage) takeDamage,
+    void Function(int) dealDamage,
+    void Function(int) takeDamage,
   ) {
-    if (_combatFinished || _showingFeedback) return;
-
     if (isCorrect) {
-      _correctAnswers++;
-      dealDamage(_damagePerCorrectAnswer);
+      dealDamage(widget.playerStatus.playerDamage);
     } else {
-      _wrongAnswers++;
       takeDamage(widget.enemy.enemyDamage);
     }
 
     setState(() {
       _feedbackMessage = isCorrect
-          ? '¡Correcto!\n\n$explanation'
-          : 'Incorrecto.\n\n$explanation';
+          ? '¡Correcto! $explanation'
+          : 'Incorrecto. $explanation';
       _showingFeedback = true;
     });
 
     _feedbackController.forward(from: 0.0);
   }
 
-  void _continueAfterFeedback() {
-    if (_combatFinished) return;
-
+  void _continueAfterFeedback(void Function(int) dealDamage) {
     setState(() {
       _showingFeedback = false;
     });
 
-    final isLastQuestion = _currentQuestionIndex >= _questions.length - 1;
-
-    if (!isLastQuestion) {
+    if (_currentQuestionIndex < _questions.length - 1) {
       setState(() {
         _currentQuestionIndex++;
       });
-      return;
+    } else {
+      dealDamage(widget.enemy.health);
+      _showFinalPopupAndExit(true);
     }
-
-    /// Si se acabaron las preguntas y el enemigo no fue derrotado,
-    /// el jugador pierde el paso.
-    ///
-    /// Esto evita la lógica vieja donde se mataba al enemigo artificialmente
-    /// al final con dealDamage(widget.enemy.health).
-    _finishCombat(false);
   }
 
   Widget _buildDividerLine() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
       height: 2,
       color: Colors.amberAccent.withOpacity(0.5),
+    );
+  }
+
+  Widget _buildIntroOverlay() {
+    return FadeTransition(
+      opacity: _introFade,
+      child: ScaleTransition(
+        scale: _introScale,
+        child: Container(
+          color: Colors.black.withOpacity(0.85),
+          alignment: Alignment.center,
+          child: Text(
+            '¡Prepárate para el combate!',
+            style: TextStyle(
+              fontFamily: 'MedievalSharp',
+              color: Colors.amberAccent[200],
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              shadows: const [
+                Shadow(
+                  color: Colors.black,
+                  offset: Offset(2, 2),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
     );
   }
 
@@ -386,8 +363,9 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
               children: [
                 Text(
                   _victory ? '¡Has ganado!' : 'Has sido derrotado...',
-                  style: _medievalStyle.copyWith(
+                  style: const TextStyle(
                     fontSize: 22,
+                    fontFamily: 'MedievalSharp',
                     color: Colors.white,
                   ),
                   textAlign: TextAlign.center,
@@ -397,18 +375,10 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
                   Text(
                     'Recompensas:\n+${widget.mission.xpReward} XP\n+${widget.mission.coinReward} monedas',
                     textAlign: TextAlign.center,
-                    style: _medievalStyle.copyWith(
+                    style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 16,
-                    ),
-                  )
-                else
-                  Text(
-                    'Respuestas correctas: $_correctAnswers / ${_questions.length}',
-                    textAlign: TextAlign.center,
-                    style: _medievalStyle.copyWith(
-                      color: Colors.white70,
-                      fontSize: 16,
+                      fontFamily: 'MedievalSharp',
                     ),
                   ),
                 const SizedBox(height: 16),
@@ -417,12 +387,17 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
                     side: const BorderSide(color: Colors.amberAccent),
                   ),
                   onPressed: () {
-                    Navigator.popUntil(context, (route) => route.isFirst);
+                    if (widget.onComplete != null) {
+                      widget.onComplete!(_victory);
+                    } else {
+                      Navigator.popUntil(context, (route) => route.isFirst);
+                    }
                   },
-                  child: Text(
+                  child: const Text(
                     'Volver al inicio',
-                    style: _medievalStyle.copyWith(
+                    style: TextStyle(
                       color: Colors.white,
+                      fontFamily: 'MedievalSharp',
                     ),
                   ),
                 ),
@@ -434,86 +409,165 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
     );
   }
 
-  Widget _buildIntroOverlay() {
-    return FadeTransition(
-      opacity: _introFade,
-      child: ScaleTransition(
-        scale: _introScale,
-        child: Container(
-          color: Colors.black.withOpacity(0.85),
-          alignment: Alignment.center,
-          child: Text(
-            '¡Prepárate para el combate!',
-            style: _medievalStyle.copyWith(
-              color: Colors.amberAccent[200],
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              shadows: const [
-                Shadow(
-                  color: Colors.black,
-                  offset: Offset(2, 2),
-                  blurRadius: 4,
+  Widget _buildFeedbackCard(
+    void Function(int) dealDamage,
+  ) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Center(
+          child: Container(
+            key: const ValueKey('feedback'),
+            margin: const EdgeInsets.symmetric(horizontal: 16.0),
+            constraints: const BoxConstraints(
+              maxWidth: 430,
+              maxHeight: 260,
+            ),
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 46, 40, 65),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.amberAccent,
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.4),
+                  offset: const Offset(3, 3),
+                  blurRadius: 6,
                 ),
               ],
             ),
-            textAlign: TextAlign.center,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _feedbackMessage,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: 'MedievalSharp',
+                      fontSize: 15,
+                      color: Colors.white,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(
+                        color: Colors.amberAccent,
+                        width: 1.5,
+                      ),
+                    ),
+                    onPressed: () => _continueAfterFeedback(dealDamage),
+                    child: const Text(
+                      'Siguiente',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'MedievalSharp',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildEmptyQuestionsView() {
-    return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 12, 12, 30),
-      appBar: AppBar(
-        title: Text(
-          'Combate: Trivia',
-          style: _medievalStyle.copyWith(color: Colors.white),
-        ),
-        backgroundColor: const Color.fromARGB(255, 2, 8, 15),
+  Widget _buildQuestionPanel(
+    Question currentQuestion,
+    void Function(int) dealDamage,
+    void Function(int) takeDamage,
+  ) {
+    return SingleChildScrollView(
+      key: const ValueKey('question'),
+      padding: const EdgeInsets.only(
+        left: 4,
+        right: 4,
+        bottom: 12,
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.45),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.amberAccent),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.amberAccent,
-                  size: 50,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Este combate no tiene preguntas configuradas.',
-                  style: _medievalStyle.copyWith(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 18),
-                ElevatedButton(
-                  onPressed: () {
-                    if (widget.onComplete != null) {
-                      widget.onComplete!(false);
-                    }
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Volver'),
-                ),
-              ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 4),
+          _buildDividerLine(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            child: Text(
+              'Pregunta ${_currentQuestionIndex + 1} de ${_questions.length}',
+              style: TextStyle(
+                fontSize: 13,
+                fontFamily: 'MedievalSharp',
+                color: Colors.amberAccent.withOpacity(0.9),
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
-        ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            child: Text(
+              currentQuestion.text,
+              style: const TextStyle(
+                fontSize: 16,
+                fontFamily: 'MedievalSharp',
+                color: Colors.white,
+                height: 1.25,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...List.generate(
+            currentQuestion.options.length,
+            (index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5.0),
+                child: FractionallySizedBox(
+                  widthFactor: 0.92,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.white),
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 9,
+                        horizontal: 10,
+                      ),
+                      textStyle: const TextStyle(
+                        fontFamily: 'MedievalSharp',
+                        fontSize: 13,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    onPressed: () {
+                      final isCorrect = index == currentQuestion.correctIndex;
+
+                      _handleAnswer(
+                        isCorrect,
+                        currentQuestion.explanation,
+                        dealDamage,
+                        takeDamage,
+                      );
+                    },
+                    child: Text(
+                      currentQuestion.options[index],
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -521,7 +575,29 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
   @override
   Widget build(BuildContext context) {
     if (_questions.isEmpty) {
-      return _buildEmptyQuestionsView();
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Combate: Trivia',
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'MedievalSharp',
+            ),
+          ),
+          backgroundColor: const Color.fromARGB(255, 2, 8, 15),
+        ),
+        body: const Center(
+          child: Text(
+            'No hay preguntas disponibles para este combate.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'MedievalSharp',
+            ),
+          ),
+        ),
+        backgroundColor: Colors.black,
+      );
     }
 
     final Enemy selectedEnemy = widget.enemy;
@@ -531,15 +607,19 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
       onWillPop: _confirmExit,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
+          title: const Text(
             'Combate: Trivia',
-            style: _medievalStyle.copyWith(color: Colors.white),
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'MedievalSharp',
+            ),
           ),
           backgroundColor: const Color.fromARGB(255, 2, 8, 15),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () async {
               final confirm = await _confirmExit();
+
               if (confirm && mounted) {
                 Navigator.pop(context);
               }
@@ -553,191 +633,42 @@ class _TriviaCombatScreenState extends State<TriviaCombatScreen>
               'assets/backgrounds/battle_bg.png',
               fit: BoxFit.cover,
             ),
-            Container(color: Colors.black.withOpacity(0.6)),
-
+            Container(
+              color: Colors.black.withOpacity(0.6),
+            ),
             if (_showIntro) _buildIntroOverlay(),
-
             if (!_showIntro)
               CombatEngine(
                 enemy: selectedEnemy,
                 playerStatus: widget.playerStatus,
-                onVictory: () => _finishCombat(true),
-                onDefeat: () => _finishCombat(false),
+                onVictory: () => _showFinalPopupAndExit(true),
+                onDefeat: () => _showFinalPopupAndExit(false),
                 child: (dealDamage, takeDamage) {
                   return ScaleTransition(
                     scale: _enemyZoom,
-                    child: Center(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        transitionBuilder: (child, animation) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: child,
-                          );
-                        },
-                        child: _showingFeedback
-                            ? _buildFeedbackView()
-                            : _buildQuestionView(
-                                currentQuestion,
-                                dealDamage,
-                                takeDamage,
-                              ),
-                      ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: child,
+                        );
+                      },
+                      child: _showingFeedback
+                          ? _buildFeedbackCard(dealDamage)
+                          : _buildQuestionPanel(
+                              currentQuestion,
+                              dealDamage,
+                              takeDamage,
+                            ),
                     ),
                   );
                 },
               ),
-
             if (_showFinalPopup) _buildFinalPopupOverlay(),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildFeedbackView() {
-    return ScaleTransition(
-      key: const ValueKey('feedback'),
-      scale: _scaleAnimation,
-      child: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24.0),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 46, 40, 65),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.amberAccent,
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.4),
-                offset: const Offset(3, 3),
-                blurRadius: 6,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _feedbackMessage,
-                textAlign: TextAlign.center,
-                style: _medievalStyle.copyWith(
-                  fontSize: 16,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                'Correctas: $_correctAnswers / ${_questions.length}',
-                style: _medievalStyle.copyWith(
-                  fontSize: 13,
-                  color: Colors.amberAccent,
-                ),
-              ),
-              const SizedBox(height: 14),
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(
-                    color: Colors.amberAccent,
-                    width: 1.5,
-                  ),
-                ),
-                onPressed: _continueAfterFeedback,
-                child: Text(
-                  'Siguiente',
-                  style: _medievalStyle.copyWith(
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuestionView(
-    Question currentQuestion,
-    void Function(int damage) dealDamage,
-    void Function(int damage) takeDamage,
-  ) {
-    return Column(
-      key: const ValueKey('question'),
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const SizedBox(height: 18),
-
-        Text(
-          'Pregunta ${_currentQuestionIndex + 1} de ${_questions.length}',
-          style: _medievalStyle.copyWith(
-            fontSize: 13,
-            color: Colors.amberAccent,
-          ),
-          textAlign: TextAlign.center,
-        ),
-
-        _buildDividerLine(),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text(
-            currentQuestion.text,
-            style: _medievalStyle.copyWith(
-              fontSize: 18,
-              color: Colors.white,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        ...List.generate(
-          currentQuestion.options.length,
-          (index) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 7.0),
-              child: FractionallySizedBox(
-                widthFactor: 0.88,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.white),
-                    foregroundColor: Colors.white,
-                    backgroundColor: Colors.black.withOpacity(0.12),
-                    textStyle: _medievalStyle,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 10,
-                    ),
-                  ),
-                  onPressed: _combatFinished || _showingFeedback
-                      ? null
-                      : () {
-                          final isCorrect =
-                              index == currentQuestion.correctIndex;
-
-                          _handleAnswer(
-                            isCorrect,
-                            currentQuestion.explanation,
-                            dealDamage,
-                            takeDamage,
-                          );
-                        },
-                  child: Text(
-                    currentQuestion.options[index],
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
     );
   }
 }

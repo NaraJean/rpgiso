@@ -4,7 +4,9 @@ import '../../data/narrative_missions.dart';
 import '../../models/narrative_mission.dart';
 import '../../models/player_status.dart';
 import '../../services/mission_progress_service.dart';
+
 import 'narrative_mission_screen.dart';
+import 'dungeon_knowledge_screen.dart';
 
 class MissionsScreen extends StatefulWidget {
   final PlayerStatus playerStatus;
@@ -67,6 +69,17 @@ class _MissionsScreenState extends State<MissionsScreen> {
     }
   }
 
+  void _openDungeon() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DungeonKnowledgeScreen(
+          playerStatus: widget.playerStatus,
+        ),
+      ),
+    );
+  }
+
   void _showLockedMessage(NarrativeMission mission) {
     final missingRequirements = mission.requiredMissionIds
         .where((id) => !_progressService.isCompleted(id))
@@ -115,9 +128,13 @@ class _MissionsScreenState extends State<MissionsScreen> {
                       Expanded(
                         child: ListView.builder(
                           padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
-                          itemCount: sortedMissions.length,
+                          itemCount: sortedMissions.length + 1,
                           itemBuilder: (context, index) {
-                            final mission = sortedMissions[index];
+                            if (index == 0) {
+                              return _buildDungeonCard();
+                            }
+
+                            final mission = sortedMissions[index - 1];
                             return _buildMissionCard(mission);
                           },
                         ),
@@ -174,6 +191,185 @@ class _MissionsScreenState extends State<MissionsScreen> {
                 fontSize: 13,
                 color: Colors.amberAccent,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDungeonCard() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(185, 20, 12, 42),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.deepPurpleAccent.withOpacity(0.85),
+          width: 1.7,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.deepPurpleAccent.withOpacity(0.20),
+            blurRadius: 18,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: _openDungeon,
+        child: Padding(
+          padding: const EdgeInsets.all(17),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurpleAccent.withOpacity(0.20),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: Colors.deepPurpleAccent.withOpacity(0.75),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.local_fire_department_rounded,
+                      color: Colors.amberAccent,
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Mazmorra del Conocimiento',
+                          style: _medievalStyle.copyWith(
+                            color: Colors.amberAccent,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Modo extra de supervivencia',
+                          style: _medievalStyle.copyWith(
+                            color: const Color(0xFFC4B5FD),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: Colors.white54,
+                    size: 18,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 13),
+              Text(
+                'Responde 30 preguntas seguidas, derrota enemigos y sobrevive hasta el final. '
+                'Cada acierto te permite atacar; cada fallo permite que el enemigo contraataque.',
+                style: _medievalStyle.copyWith(
+                  fontSize: 14,
+                  color: Colors.white70,
+                  height: 1.25,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildDungeonChip(
+                    icon: Icons.quiz_rounded,
+                    text: '30 preguntas',
+                    color: Colors.amberAccent,
+                  ),
+                  _buildDungeonChip(
+                    icon: Icons.favorite_rounded,
+                    text: 'Supervivencia',
+                    color: Colors.redAccent,
+                  ),
+                  _buildDungeonChip(
+                    icon: Icons.shield_rounded,
+                    text: 'Enemigos rotativos',
+                    color: const Color(0xFFC4B5FD),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 15),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _openDungeon,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 34, 24, 70),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    side: BorderSide(
+                      color: Colors.amberAccent.withOpacity(0.75),
+                      width: 1,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  icon: const Icon(
+                    Icons.door_front_door_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  label: Text(
+                    'Entrar a la mazmorra',
+                    style: _medievalStyle.copyWith(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDungeonChip({
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.35),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(0.45),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 15),
+          const SizedBox(width: 5),
+          Text(
+            text,
+            style: _medievalStyle.copyWith(
+              fontSize: 12,
+              color: Colors.white70,
             ),
           ),
         ],
